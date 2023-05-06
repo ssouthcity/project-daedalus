@@ -1,21 +1,48 @@
-use bevy::prelude::*;
+mod components;
+mod systems;
+
+use bevy::{prelude::*, render::camera::ScalingMode};
+use bevy_ecs_ldtk::prelude::*;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use components::{ChestBundle, KnightBundle, Patrol};
+use systems::{apply_velocity, item_glow, update_patrol_target, update_patrol_velocity};
+
+pub const PPU: f32 = 16.0;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
+        .add_plugin(WorldInspectorPlugin::new())
+        .add_plugin(LdtkPlugin)
         .add_startup_system(setup)
+        .add_systems((
+            apply_velocity,
+            item_glow, 
+            update_patrol_target,
+            update_patrol_velocity,
+        ))
+        .insert_resource(ClearColor(Color::BLACK))
+        .insert_resource(LevelSelection::Index(0))
+        .register_ldtk_entity::<ChestBundle>("Chest")
+        .register_ldtk_entity::<KnightBundle>("Knight")
+        .register_type::<Patrol>()
         .run();
 }
 
-fn setup(mut commands: Commands) {
-    commands.spawn(Camera2dBundle::default());
-
-    commands.spawn(SpriteBundle {
-        sprite: Sprite {
-            color: Color::LIME_GREEN,
-            custom_size: Some(Vec2::new(32.0, 32.0)),
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.spawn(Camera2dBundle {
+        projection: OrthographicProjection {
+            scaling_mode: ScalingMode::FixedVertical(16.0 * 16.0),
             ..default()
         },
         ..default()
     });
+
+    commands.spawn((
+        Name::new("LDTK World"),
+        LdtkWorldBundle {
+            ldtk_handle: asset_server.load("project-daedalus.ldtk"),
+            ..default()
+        },
+    ));
 }
