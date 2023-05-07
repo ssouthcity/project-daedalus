@@ -68,3 +68,23 @@ pub struct KnightBundle {
 
 #[derive(Component, Deref, DerefMut, Default)]
 pub struct Velocity(pub Vec2);
+
+#[derive(Component, Default)]
+pub struct Player;
+
+#[derive(Bundle, LdtkEntity)]
+pub struct MinotaurBundle {
+    #[sprite_sheet_bundle]
+    #[bundle]
+    sprite_bundle: SpriteSheetBundle,
+    velocity: Velocity,
+    player: Player,
+}
+
+#[derive(Component, Default)]
+pub struct Wall;
+
+#[derive(Bundle, LdtkIntCell)]
+pub struct WallBundle {
+    wall: Wall,
+}

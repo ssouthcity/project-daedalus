@@ -1,10 +1,23 @@
-use crate::components::{Items, Patrol, Velocity};
-use bevy::prelude::*;
+use crate::components::{Items, Patrol, Velocity, Player, Wall};
+use bevy::{prelude::*, sprite::collide_aabb::collide};
 
-pub fn apply_velocity(mut query: Query<(&mut Transform, &Velocity)>, time: Res<Time>) {
+pub fn apply_velocity(
+    mut query: Query<(&mut Transform, &Velocity), Without<Wall>>, 
+    wall_query: Query<&Transform, With<Wall>>, 
+    time: Res<Time>,
+) {
     for (mut transform, velocity) in query.iter_mut() {
         transform.translation.x += velocity.x * time.delta_seconds();
         transform.translation.y += velocity.y * time.delta_seconds();
+        
+        for wall_transform in wall_query.iter() {
+            let velocity_dir = velocity.normalize();
+
+            while let Some(_) = collide(wall_transform.translation, Vec2::splat(super::PPU), transform.translation, Vec2::splat(super::PPU)) {
+                transform.translation.x -= velocity_dir.x;
+                transform.translation.y -= velocity_dir.y;
+            }
+        }
     }
 }
 
@@ -46,5 +59,46 @@ pub fn update_patrol_velocity(mut query: Query<(&mut Velocity, &Transform, &Patr
         );
 
         velocity.0 = direction.normalize() * super::PPU * 4.0;
+    }
+}
+
+pub fn apply_input(mut query: Query<&mut Velocity, With<Player>>, input: Res<Input<KeyCode>>) {
+    let speed: f32 = 64.0;
+
+    let mut new_velocity = Vec2::ZERO;
+
+    if input.pressed(KeyCode::W) {
+        new_velocity.y += 1.0;
+    }
+
+    if input.pressed(KeyCode::S) {
+        new_velocity.y -= 1.0;
+    }
+
+    if input.pressed(KeyCode::A) {
+        new_velocity.x -= 1.0;
+    }
+
+    if input.pressed(KeyCode::D) {
+        new_velocity.x += 1.0;
+    }
+
+    new_velocity = new_velocity.normalize_or_zero() * speed;
+
+    for mut velocity in query.iter_mut() {
+        velocity.x = new_velocity.x;
+        velocity.y = new_velocity.y;
+    }
+}
+
+pub fn camera_follow_player(
+    player_query: Query<&Transform, With<Player>>, 
+    mut camera_query: Query<&mut Transform, (With<OrthographicProjection>, Without<Player>)>,
+) {
+    for player_pos in player_query.iter() {
+        let mut camera_pos = camera_query.single_mut();
+
+        camera_pos.translation.x = player_pos.translation.x;
+        camera_pos.translation.y = player_pos.translation.y;
     }
 }
