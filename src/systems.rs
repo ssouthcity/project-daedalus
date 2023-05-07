@@ -13,7 +13,12 @@ pub fn apply_velocity(
         for wall_transform in wall_query.iter() {
             let velocity_dir = velocity.normalize();
 
-            while let Some(_) = collide(wall_transform.translation, Vec2::splat(super::PPU), transform.translation, Vec2::splat(super::PPU)) {
+            while let Some(_) = collide(
+                wall_transform.translation + Vec3::splat(super::PPU / 2.0), 
+                Vec2::splat(super::PPU), 
+                transform.translation, 
+                Vec2::splat(super::PPU),
+            ) {
                 transform.translation.x -= velocity_dir.x;
                 transform.translation.y -= velocity_dir.y;
             }
