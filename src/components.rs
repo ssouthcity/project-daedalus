@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 
+use crate::net;
+
 #[derive(Component)]
 pub enum Items {
     StaminaPotion,
@@ -14,7 +16,7 @@ impl From<&EntityInstance> for Items {
             "Stamina_Potion" => Self::StaminaPotion,
             "Health_Potion" => Self::HealthPotion,
             "Mana_Potion" => Self::ManaPotion,
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 }
@@ -28,13 +30,12 @@ pub struct ChestBundle {
     sprite_bundle: SpriteSheetBundle,
 }
 
-
 #[derive(Component, Reflect, Default)]
 pub struct Patrol(Vec<Vec3>);
 
 impl Patrol {
     pub fn target(&self) -> &Vec3 {
-        return self.0.first().unwrap()
+        return self.0.first().unwrap();
     }
 
     pub fn next(&mut self) {
@@ -42,15 +43,25 @@ impl Patrol {
     }
 }
 
-
 impl From<&EntityInstance> for Patrol {
     fn from(entity_instance: &EntityInstance) -> Self {
-        let mut patrol_path: Vec<Vec3> = entity_instance.iter_points_field("Patrol")
+        let mut patrol_path: Vec<Vec3> = entity_instance
+            .iter_points_field("Patrol")
             .unwrap()
-            .map(|point| Vec3::new(point.x as f32 * super::PPU, (15 - point.y) as f32 * super::PPU, 0.0))
+            .map(|point| {
+                Vec3::new(
+                    point.x as f32 * super::PPU,
+                    (15 - point.y) as f32 * super::PPU,
+                    0.0,
+                )
+            })
             .collect();
 
-        patrol_path.push(Vec3::new(entity_instance.grid.x as f32 * super::PPU, (15 - entity_instance.grid.y) as f32 * super::PPU, 0.0));
+        patrol_path.push(Vec3::new(
+            entity_instance.grid.x as f32 * super::PPU,
+            (15 - entity_instance.grid.y) as f32 * super::PPU,
+            0.0,
+        ));
 
         Self(patrol_path)
     }
@@ -69,16 +80,14 @@ pub struct KnightBundle {
 #[derive(Component, Deref, DerefMut, Default)]
 pub struct Velocity(pub Vec2);
 
-#[derive(Component, Default)]
-pub struct Player;
-
 #[derive(Bundle, LdtkEntity)]
 pub struct MinotaurBundle {
     #[sprite_sheet_bundle]
     #[bundle]
     sprite_bundle: SpriteSheetBundle,
     velocity: Velocity,
-    player: Player,
+    #[with(net::Player::from_entity)]
+    character: net::Player,
 }
 
 #[derive(Component, Default)]
@@ -87,4 +96,14 @@ pub struct Wall;
 #[derive(Bundle, LdtkIntCell)]
 pub struct WallBundle {
     wall: Wall,
+}
+
+#[derive(Bundle, LdtkEntity)]
+pub struct IcarusBundle {
+    #[sprite_sheet_bundle]
+    #[bundle]
+    sprite_bundle: SpriteSheetBundle,
+    velocity: Velocity,
+    #[with(net::Player::from_entity)]
+    character: net::Player,
 }
